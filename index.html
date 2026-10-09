@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SVM Handwritten Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Kalam:wght@300;400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#fbf7ec;
+    --line:#b9d3e8;
+    --margin-red:#e08a8a;
+    --ink:#1f2b4d;
+    --ink-soft:#2c3a63;
+    --pencil:#4b4033;
+    --highlight:#fff2a8;
+    --highlight2:#c9f2d8;
+    --accent:#c0392b;
+    --accent2:#1f6f4a;
+    --box-blue:#2b5aa0;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:#e7ddc9;
+    font-family:'Kalam', cursive;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:28px 10px 60px;
+  }
+  .notebook{
+    width:100%;
+    max-width:860px;
+    background:
+      linear-gradient(var(--paper), var(--paper)) padding-box,
+      repeating-linear-gradient(
+        var(--paper) 0px, var(--paper) 33px,
+        var(--line) 34px, var(--paper) 35px
+      );
+    background-size:100% 100%;
+    position:relative;
+    padding:36px 30px 36px 62px;
+    border-radius:4px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .notebook::before{
+    content:"";
+    position:absolute;
+    top:0; bottom:0; left:40px;
+    width:2px;
+    background:var(--margin-red);
+    opacity:0.55;
+  }
+  .holes{
+    position:absolute;
+    left:14px; top:0; bottom:0;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-evenly;
+  }
+  .holes span{
+    width:14px; height:14px; border-radius:50%;
+    background:#d9cfb5;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,0.35);
+    display:block;
+  }
+
+  h1.title{
+    font-family:'Caveat', cursive;
+    font-size:52px;
+    text-align:center;
+    color:var(--accent);
+    margin:4px 0 2px;
+    transform:rotate(-1deg);
+  }
+  .subtitle{
+    text-align:center;
+    font-family:'Patrick Hand', cursive;
+    font-size:18px;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .underline-doodle{
+    display:block;
+    width:260px;
+    height:10px;
+    margin:0 auto 22px;
+    background:none;
+  }
+  hr.wavy{
+    border:none;
+    height:12px;
+    margin:10px 0 22px;
+    background-image: radial-gradient(circle at 6px 0, transparent 6px, var(--accent) 7px);
+    background-size:12px 12px;
+    background-repeat:repeat-x;
+    background-position:center;
+    opacity:0.5;
+  }
+
+  h2.section{
+    font-family:'Caveat', cursive;
+    font-size:34px;
+    color:var(--box-blue);
+    margin:34px 0 6px;
+    border-bottom:3px solid var(--box-blue);
+    display:inline-block;
+    padding-bottom:2px;
+    transform:rotate(-0.4deg);
+  }
+  .secnum{
+    display:inline-block;
+    background:var(--accent);
+    color:#fff;
+    font-family:'Patrick Hand',cursive;
+    font-size:20px;
+    width:32px; height:32px;
+    line-height:32px;
+    text-align:center;
+    border-radius:50%;
+    margin-right:10px;
+    transform:rotate(-6deg);
+  }
+
+  h3.sub{
+    font-family:'Caveat', cursive;
+    font-size:26px;
+    color:var(--accent2);
+    margin:20px 0 6px;
+  }
+
+  p, li{
+    font-size:18.5px;
+    line-height:1.65;
+    color:var(--pencil);
+  }
+  ul, ol{
+    margin:6px 0 14px;
+    padding-left:26px;
+  }
+  li{margin-bottom:6px;}
+  li::marker{
+    color:var(--accent);
+    font-family:'Caveat', cursive;
+    font-weight:700;
+  }
+
+  .hl{
+    background:linear-gradient(120deg, var(--highlight) 0%, var(--highlight) 100%);
+    padding:1px 6px;
+    border-radius:3px 8px 3px 8px;
+  }
+  .hl-green{
+    background:var(--highlight2);
+    padding:1px 6px;
+    border-radius:3px 8px 3px 8px;
+  }
+  b, strong{color:var(--ink);}
+
+  .box{
+    border:2.5px solid var(--box-blue);
+    border-radius:14px 4px 14px 4px;
+    padding:14px 18px;
+    margin:16px 0;
+    background:rgba(255,255,255,0.45);
+    position:relative;
+  }
+  .box.def{border-color:var(--box-blue); border-style:solid;}
+  .box.note{border-color:#8e6bb0; border-style:dashed;}
+  .box.example{border-color:var(--accent2);}
+  .box.warn{border-color:var(--accent); border-style:dashed;}
+  .box .tag{
+    position:absolute;
+    top:-16px; left:14px;
+    background:var(--paper);
+    padding:0 8px;
+    font-family:'Caveat', cursive;
+    font-weight:700;
+    font-size:22px;
+  }
+  .box.def .tag{color:var(--box-blue);}
+  .box.note .tag{color:#8e6bb0;}
+  .box.example .tag{color:var(--accent2);}
+  .box.warn .tag{color:var(--accent);}
+
+  .math{
+    font-family:'Patrick Hand', cursive;
+    background:#fffefb;
+    border:1.5px dashed #a7a08c;
+    padding:10px 16px;
+    margin:10px 0;
+    display:inline-block;
+    font-size:19px;
+    color:var(--ink);
+  }
+  .math-block{
+    font-family:'Patrick Hand', cursive;
+    background:#fffefb;
+    border-left:4px solid var(--accent2);
+    padding:10px 16px;
+    margin:12px 0;
+    font-size:19px;
+    color:var(--ink);
+  }
+  em.term{
+    font-style:normal;
+    font-weight:700;
+    color:var(--box-blue);
+  }
+
+  table{
+    border-collapse:collapse;
+    width:100%;
+    margin:14px 0;
+    font-family:'Patrick Hand', cursive;
+    font-size:16.5px;
+    background:rgba(255,255,255,0.5);
+  }
+  th, td{
+    border:2px solid #7d7259;
+    padding:8px 10px;
+    text-align:left;
+    vertical-align:top;
+  }
+  th{
+    background:#ffe9a8;
+    color:var(--ink);
+    font-family:'Caveat', cursive;
+    font-size:20px;
+  }
+
+  .sticky{
+    background:#ffe08a;
+    padding:14px 16px;
+    margin:18px 0;
+    box-shadow:2px 4px 8px rgba(0,0,0,0.2);
+    transform:rotate(-1deg);
+    font-family:'Patrick Hand', cursive;
+    border-radius:2px;
+  }
+  .sticky.green{background:#c6f2c1; transform:rotate(1deg);}
+  .sticky b{display:block; font-family:'Caveat',cursive; font-size:22px; margin-bottom:4px;}
+
+  svg.diagram{
+    display:block;
+    margin:16px auto;
+    max-width:100%;
+  }
+  .caption{
+    text-align:center;
+    font-family:'Patrick Hand', cursive;
+    color:#6b6250;
+    font-size:15px;
+    margin-top:-8px;
+  }
+
+  .arrow-note{
+    font-family:'Patrick Hand', cursive;
+    color:var(--accent);
+    font-size:16px;
+  }
+
+  .two-col{
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+  }
+  .two-col > div{flex:1 1 260px;}
+
+  .toc{
+    background:rgba(255,255,255,0.5);
+    border:2px dotted #8e6bb0;
+    border-radius:10px;
+    padding:14px 20px;
+    margin:16px 0 30px;
+  }
+  .toc b{
+    font-family:'Caveat', cursive;
+    font-size:26px;
+    color:#8e6bb0;
+  }
+  .toc ol{margin-top:8px;}
+  .toc a{color:var(--ink-soft); text-decoration:none; border-bottom:1px dashed var(--ink-soft);}
+
+  .checklist li{list-style:none; margin-left:-26px; padding-left:0;}
+  .checklist li:before{
+    content:"✔";
+    color:var(--accent2);
+    font-weight:bold;
+    margin-right:8px;
+  }
+
+  .footer-note{
+    margin-top:40px;
+    text-align:center;
+    font-family:'Caveat', cursive;
+    font-size:22px;
+    color:#8e6bb0;
+  }
+
+  @media (max-width:600px){
+    .notebook{padding:28px 16px 28px 46px;}
+    .notebook::before{left:26px;}
+    .holes{display:none;}
+    h1.title{font-size:38px;}
+  }
+</style>
+</head>
+<body>
+<div class="notebook">
+  <div class="holes"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+
+  <h1 class="title">Support Vector Machine (SVM)</h1>
+  <div class="subtitle">— my complete B.Tech notes, beginner → advanced —</div>
+  <hr class="wavy">
+
+  <div class="toc">
+    <b>📑 What's inside</b>
+    <ol>
+      <li><a href="#s1">Introduction to SVM</a></li>
+      <li><a href="#s2">Why SVM? Intuition first</a></li>
+      <li><a href="#s3">Hyperplane &amp; Decision Surface</a></li>
+      <li><a href="#s4">Margin &amp; Support Vectors</a></li>
+      <li><a href="#s5">Mathematical formulation (Linear SVM)</a></li>
+      <li><a href="#s6">Hard Margin vs Soft Margin</a></li>
+      <li><a href="#s7">Types of SVM</a></li>
+      <li><a href="#s8">Kernel Trick</a></li>
+      <li><a href="#s9">Types of Kernels — Linear, Polynomial, Gaussian(RBF)</a></li>
+      <li><a href="#s10">Properties of SVM</a></li>
+      <li><a href="#s11">Issues / Limitations of SVM</a></li>
+      <li><a href="#s12">Quick Revision Sheet</a></li>
+    </ol>
+  </div>
+
+  <!-- SECTION 1 -->
+  <h2 class="section" id="s1"><span class="secnum">1</span>Introduction to SVM</h2>
+  <ul>
+    <li><b>SVM (Support Vector Machine)</b> is a <span class="hl">supervised machine learning algorithm</span> — meaning it learns from <em>labeled</em> data (input + correct output already given).</li>
+    <li>It is used mainly for <em class="term">classification</em> problems (putting data into categories), but a version called <em class="term">SVR</em> (Support Vector Regression) also handles regression (predicting numbers).</li>
+    <li>Invented by <b>Vladimir Vapnik</b> and colleagues (based on <em>Statistical Learning Theory</em>) in the 1990s.</li>
+    <li>Core idea in one line: <span class="hl">SVM finds the best possible boundary (line/plane) that separates different classes of data with the maximum possible gap.</span></li>
+  </ul>
+
+  <div class="box def">
+    <div class="tag">Definition</div>
+    Support Vector Machine is a discriminative classifier formally defined by a separating <b>hyperplane</b>. Given labeled training data, the algorithm outputs an optimal hyperplane which categorises new, unseen examples.
+  </div>
+
+  <h3 class="sub">Real life analogy</h3>
+  <p>Imagine two groups of students standing in a playground — "Maths lovers" on one side and "Science lovers" on the other. You want to draw <b>one straight line</b> on the ground that separates the two groups as cleanly as possible, and you also want the line to stay as far away as possible from both groups (so that even if one student takes a small step, the line still correctly separates them). That "safest, most balanced" line is exactly what SVM tries to find.</p>
+
+  <!-- SECTION 2 -->
+  <h2 class="section" id="s2"><span class="secnum">2</span>Why SVM? Intuition First</h2>
+  <p>Suppose we have two classes of points (●red and ▲blue) that are linearly separable — many lines can separate them. SVM asks: <b>"which one of the infinite possible lines is the BEST?"</b></p>
+
+  <svg class="diagram" viewBox="0 0 620 260" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="620" height="260" fill="#fffefb" stroke="#cfc7ae" stroke-width="1"/>
+    <!-- bad lines -->
+    <line x1="40" y1="30" x2="300" y2="230" stroke="#cbb9d9" stroke-width="2" stroke-dasharray="5,4"/>
+    <line x1="120" y1="20" x2="420" y2="240" stroke="#cbb9d9" stroke-width="2" stroke-dasharray="5,4"/>
+    <!-- best line -->
+    <line x1="90" y1="15" x2="360" y2="245" stroke="#c0392b" stroke-width="3"/>
+    <line x1="55" y1="15" x2="325" y2="245" stroke="#c0392b" stroke-width="1.4" stroke-dasharray="3,4"/>
+    <line x1="125" y1="15" x2="395" y2="245" stroke="#c0392b" stroke-width="1.4" stroke-dasharray="3,4"/>
+    <!-- blue triangles class -->
+    <polygon points="470,40 485,65 455,65" fill="#2b5aa0"/>
+    <polygon points="520,90 535,115 505,115" fill="#2b5aa0"/>
+    <polygon points="460,130 475,155 445,155" fill="#2b5aa0"/>
+    <polygon points="540,150 555,175 525,175" fill="#2b5aa0"/>
+    <polygon points="400,60 415,85 385,85" fill="#2b5aa0"/>
+    <!-- red circles class -->
+    <circle cx="120" cy="90" r="11" fill="#e08a8a"/>
+    <circle cx="70" cy="140" r="11" fill="#e08a8a"/>
+    <circle cx="150" cy="180" r="11" fill="#e08a8a"/>
+    <circle cx="200" cy="130" r="11" fill="#e08a8a"/>
+    <circle cx="230" cy="200" r="11" fill="#e08a8a"/>
+    <text x="300" y="20" font-family="Caveat, cursive" font-size="20" fill="#c0392b">best hyperplane (max margin)</text>
+    <text x="30" y="250" font-family="Patrick Hand, cursive" font-size="14" fill="#8e6bb0">weak choices — too close to one class →</text>
+  </svg>
+  <p class="caption">Fig 2.1 — Many lines can separate the classes, but only ONE has the maximum margin on both sides.</p>
+
+  <div class="sticky">
+    <b>Why "maximum margin" matters</b>
+    A line squeezed too close to one class is risky — new/unseen points of that class may fall on the wrong side. A line with a bigger cushion (margin) on both sides generalises better to new data. This is the heart of SVM's philosophy.
+  </div>
+
+  <!-- SECTION 3 -->
+  <h2 class="section" id="s3"><span class="secnum">3</span>Hyperplane &amp; Decision Surface</h2>
+  <ul>
+    <li>A <em class="term">hyperplane</em> is the decision boundary that separates classes.</li>
+    <li>In <b>2D</b> (2 features) → hyperplane is a simple <b>line</b>.</li>
+    <li>In <b>3D</b> (3 features) → hyperplane is a flat <b>plane</b>.</li>
+    <li>In <b>n-dimensions</b> (n features) → hyperplane is an (n−1) dimensional flat "surface" — this general surface is what we call the <b>decision surface</b>.</li>
+  </ul>
+
+  <div class="math-block">
+    General equation of a hyperplane:<br>
+    <b>w · x + b = 0</b><br><br>
+    where:<br>
+    &nbsp;&nbsp;<b>w</b> = weight vector (perpendicular / normal to the hyperplane, decides orientation)<br>
+    &nbsp;&nbsp;<b>x</b> = input feature vector<br>
+    &nbsp;&nbsp;<b>b</b> = bias term (shifts the hyperplane away from origin)<br>
+    &nbsp;&nbsp;<b>w · x</b> = dot product = w<sub>1</sub>x<sub>1</sub> + w<sub>2</sub>x<sub>2</sub> + ... + w<sub>n</sub>x<sub>n</sub>
+  </div>
+
+  <p>For a point to be classified, we simply check which side of the hyperplane it falls on:</p>
+  <div class="math-block">
+    If <b>w·x + b &gt; 0</b> → predict class <b>+1</b><br>
+    If <b>w·x + b &lt; 0</b> → predict class <b>−1</b>
+  </div>
+
+  <div class="box note">
+    <div class="tag">Note</div>
+    "Decision surface" and "hyperplane" are used interchangeably in SVM literature — decision surface is just the general term (works for any dimension), hyperplane is the mathematical name for that flat surface.
+  </div>
+
+  <!-- SECTION 4 -->
+  <h2 class="section" id="s4"><span class="secnum">4</span>Margin &amp; Support Vectors</h2>
+
+  <svg class="diagram" viewBox="0 0 620 260" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="620" height="260" fill="#fffefb" stroke="#cfc7ae" stroke-width="1"/>
+    <line x1="60" y1="20" x2="500" y2="240" stroke="#1f2b4d" stroke-width="3"/>
+    <line x1="20" y1="30" x2="460" y2="250" stroke="#2b5aa0" stroke-width="2" stroke-dasharray="6,5"/>
+    <line x1="100" y1="10" x2="540" y2="230" stroke="#c0392b" stroke-width="2" stroke-dasharray="6,5"/>
+    <!-- margin label -->
+    <text x="300" y="150" font-family="Caveat, cursive" font-size="18" fill="#4b4033" transform="rotate(28 300 150)">margin (widest street)</text>
+    <!-- blue class + support vectors circled -->
+    <circle cx="70" cy="60" r="10" fill="#2b5aa0"/>
+    <circle cx="130" cy="90" r="10" fill="#2b5aa0"/>
+    <circle cx="60" cy="120" r="10" fill="#2b5aa0"/>
+    <circle cx="105" cy="47" r="16" fill="none" stroke="#c0392b" stroke-width="2"/>
+    <!-- red class + support vector circled -->
+    <circle cx="480" cy="150" r="10" fill="#e08a8a"/>
+    <circle cx="540" cy="190" r="10" fill="#e08a8a"/>
+    <circle cx="500" cy="220" r="10" fill="#e08a8a"/>
+    <circle cx="497" cy="197" r="16" fill="none" stroke="#c0392b" stroke-width="2"/>
+    <text x="20" y="240" font-family="Patrick Hand, cursive" font-size="14" fill="#c0392b">circled points = support vectors (closest to the boundary)</text>
+  </svg>
+  <p class="caption">Fig 4.1 — The solid line is the hyperplane; dashed lines mark the margin boundary; circled points are support vectors.</p>
+
+  <div class="box def">
+    <div class="tag">Support Vectors</div>
+    The data points that lie <b>closest</b> to the hyperplane (right on the edge of the margin). They are the most "critical" / "difficult" points — <span class="hl">removing any other point does not change the hyperplane, but removing a support vector CAN change it.</span> This is why the algorithm is named after them!
+  </div>
+
+  <div class="box def">
+    <div class="tag">Margin</div>
+    The distance between the hyperplane and the nearest data point(s) from either class. SVM tries to <b>maximise</b> this margin → hence also called a <em>Maximum Margin Classifier</em>.
+  </div>
+
+  <ul class="checklist">
+    <li>Only support vectors decide the position of the hyperplane.</li>
+    <li>Points far from the boundary have no influence on the model.</li>
+    <li>This makes SVM memory-efficient at prediction time — it only needs to "remember" support vectors, not the whole dataset.</li>
+  </ul>
+
+  <!-- SECTION 5 -->
+  <h2 class="section" id="s5"><span class="secnum">5</span>Mathematical Formulation (Linear SVM)</h2>
+  <p>Let training data be (x<sub>i</sub>, y<sub>i</sub>) where y<sub>i</sub> ∈ {+1, −1}.</p>
+
+  <h3 class="sub">Step 1 — Canonical hyperplanes</h3>
+  <p>We scale w and b so that the closest points satisfy:</p>
+  <div class="math-block">
+    w·x + b = +1 &nbsp; (for positive-class support vectors)<br>
+    w·x + b = −1 &nbsp; (for negative-class support vectors)
+  </div>
+
+  <h3 class="sub">Step 2 — Width of the margin</h3>
+  <p>The perpendicular distance between these two parallel planes works out to:</p>
+  <div class="math-block">
+    Margin width = <b>2 / ‖w‖</b>
+  </div>
+  <p>where ‖w‖ is the magnitude (norm) of the weight vector. To <b>maximise</b> 2/‖w‖, we must <b>minimise</b> ‖w‖.</p>
+
+  <h3 class="sub">Step 3 — The optimisation problem</h3>
+  <div class="math-block">
+    Minimise: &nbsp; ½ ‖w‖²<br>
+    Subject to: &nbsp; y<sub>i</sub> (w·x<sub>i</sub> + b) ≥ 1, &nbsp; for all i = 1,...,n
+  </div>
+  <p>This is a <em class="term">convex quadratic optimisation problem</em> — solved using <b>Lagrange multipliers</b> and converted into its <em class="term">dual form</em>:</p>
+  <div class="math-block">
+    Maximise: &nbsp; Σα<sub>i</sub> − ½ ΣΣ α<sub>i</sub>α<sub>j</sub> y<sub>i</sub>y<sub>j</sub> (x<sub>i</sub>·x<sub>j</sub>)<br>
+    Subject to: &nbsp; α<sub>i</sub> ≥ 0 &nbsp; and &nbsp; Σα<sub>i</sub>y<sub>i</sub> = 0
+  </div>
+  <p>Here α<sub>i</sub> are Lagrange multipliers. Points with <b>α<sub>i</sub> &gt; 0</b> are exactly the <b>support vectors</b> — every other point gets α<sub>i</sub> = 0 (confirms what we said in Section 4!).</p>
+
+  <div class="box note">
+    <div class="tag">Why the dual form?</div>
+    The dual form expresses everything in terms of dot products <b>x<sub>i</sub>·x<sub>j</sub></b> of data points. This one fact is *exactly* what allows the "kernel trick" later (Section 8) — we can replace the dot product with a kernel function without ever needing the primal form.
+  </div>
+
+  <!-- SECTION 6 -->
+  <h2 class="section" id="s6"><span class="secnum">6</span>Hard Margin vs Soft Margin</h2>
+  <table>
+    <tr><th>Aspect</th><th>Hard Margin SVM</th><th>Soft Margin SVM</th></tr>
+    <tr><td>Data assumption</td><td>Perfectly linearly separable, no noise</td><td>Some overlap / noise / outliers allowed</td></tr>
+    <tr><td>Misclassification</td><td>Not allowed at all</td><td>Allowed, but penalised</td></tr>
+    <tr><td>Key parameter</td><td>None extra</td><td>Slack variable ξᵢ and penalty parameter <b>C</b></td></tr>
+    <tr><td>Formula change</td><td>y<sub>i</sub>(w·x<sub>i</sub>+b) ≥ 1</td><td>y<sub>i</sub>(w·x<sub>i</sub>+b) ≥ 1 − ξ<sub>i</sub>, ξ<sub>i</sub> ≥ 0</td></tr>
+    <tr><td>Objective</td><td>Minimise ½‖w‖²</td><td>Minimise ½‖w‖² + C·Σξ<sub>i</sub></td></tr>
+    <tr><td>Real world use</td><td>Rare (ideal case only)</td><td>Almost always used in practice</td></tr>
+  </table>
+
+  <div class="box warn">
+    <div class="tag">About parameter C</div>
+    <b>Large C</b> → small margin, tries hard to classify every training point correctly (risk of overfitting).<br>
+    <b>Small C</b> → wider margin, allows more misclassification (risk of underfitting).<br>
+    C controls the <em>trade-off</em> between margin size and classification error.
+  </div>
+
+  <!-- SECTION 7 -->
+  <h2 class="section" id="s7"><span class="secnum">7</span>Types of SVM</h2>
+  <div class="two-col">
+    <div class="box def">
+      <div class="tag">1. Linear SVM</div>
+      Used when data is <b>linearly separable</b> — a straight line/plane can separate classes directly. Uses the linear kernel (Section 9).
+    </div>
+    <div class="box def">
+      <div class="tag">2. Non-Linear SVM</div>
+      Used when data <b>cannot</b> be separated by a straight line. Data is mapped into a higher dimension using a <b>kernel function</b>, where it becomes linearly separable.
+    </div>
+  </div>
+  <p>Based on task type, SVM is also grouped as:</p>
+  <ul>
+    <li><em class="term">SVC</em> (Support Vector Classification) — for classification tasks.</li>
+    <li><em class="term">SVR</em> (Support Vector Regression) — for regression / predicting continuous values, using an "ε-insensitive tube" instead of a strict margin.</li>
+    <li><em class="term">One-class SVM</em> — used for anomaly / novelty detection (learns the boundary of "normal" data only).</li>
+  </ul>
+
+  <!-- SECTION 8 -->
+  <h2 class="section" id="s8"><span class="secnum">8</span>The Kernel Trick</h2>
+  <p>Real-world data is often <b>not linearly separable</b> in its original space:</p>
+
+  <svg class="diagram" viewBox="0 0 620 220" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="300" height="220" fill="#fffefb" stroke="#cfc7ae"/>
+    <rect x="320" y="0" width="300" height="220" fill="#fffefb" stroke="#cfc7ae"/>
+    <!-- left: circles inside, triangles outside (non separable by line) -->
+    <circle cx="150" cy="110" r="9" fill="#e08a8a"/>
+    <circle cx="130" cy="90" r="9" fill="#e08a8a"/>
+    <circle cx="170" cy="90" r="9" fill="#e08a8a"/>
+    <circle cx="150" cy="140" r="9" fill="#e08a8a"/>
+    <circle cx="130" cy="130" r="9" fill="#e08a8a"/>
+    <polygon points="150,30 160,50 140,50" fill="#2b5aa0"/>
+    <polygon points="60,110 70,130 50,130" fill="#2b5aa0"/>
+    <polygon points="240,110 250,130 230,130" fill="#2b5aa0"/>
+    <polygon points="150,190 160,210 140,210" fill="#2b5aa0"/>
+    <polygon points="90,60 100,80 80,80" fill="#2b5aa0"/>
+    <polygon points="210,170 220,190 200,190" fill="#2b5aa0"/>
+    <text x="70" y="20" font-family="Caveat,cursive" font-size="18" fill="#4b4033">Original space (not separable)</text>
+    <!-- right: after mapping, separable with a line/curve -->
+    <line x1="330" y1="60" x2="610" y2="60" stroke="#c0392b" stroke-width="3"/>
+    <circle cx="420" cy="150" r="9" fill="#e08a8a"/>
+    <circle cx="460" cy="170" r="9" fill="#e08a8a"/>
+    <circle cx="500" cy="150" r="9" fill="#e08a8a"/>
+    <circle cx="470" cy="190" r="9" fill="#e08a8a"/>
+    <polygon points="360,30 370,50 350,50" fill="#2b5aa0"/>
+    <polygon points="420,20 430,40 410,40" fill="#2b5aa0"/>
+    <polygon points="500,25 510,45 490,45" fill="#2b5aa0"/>
+    <polygon points="560,35 570,55 550,55" fill="#2b5aa0"/>
+    <text x="360" y="20" font-family="Caveat,cursive" font-size="18" fill="#4b4033">After mapping φ(x) — now separable!</text>
+    <text x="430" y="100" font-family="Patrick Hand,cursive" font-size="14" fill="#c0392b">straight hyperplane works here</text>
+  </svg>
+  <p class="caption">Fig 8.1 — Kernel trick lifts data into a higher-dimensional space φ(x) where it becomes linearly separable.</p>
+
+  <div class="box def">
+    <div class="tag">Kernel Trick — Definition</div>
+    Instead of explicitly transforming every point x → φ(x) into a higher dimension (which is computationally very expensive, sometimes even infinite-dimensional), we use a <b>kernel function K(x<sub>i</sub>, x<sub>j</sub>) = φ(x<sub>i</sub>) · φ(x<sub>j</sub>)</b> that computes the dot product <em>directly in the original space</em> — giving us the same result as if we had transformed the data, without ever actually doing the transformation.
+  </div>
+
+  <ul>
+    <li>Remember from Section 5 — the SVM dual form only needs <b>dot products</b> of data points, never the points themselves. That's exactly what makes this substitution possible.</li>
+    <li>This substitution (replacing x<sub>i</sub>·x<sub>j</sub> with K(x<sub>i</sub>,x<sub>j</sub>)) is called <em class="term">kernel substitution</em>.</li>
+    <li>Saves enormous computation — this is why it's called a "trick".</li>
+  </ul>
+
+  <!-- SECTION 9 -->
+  <h2 class="section" id="s9"><span class="secnum">9</span>Types of SVM Kernels</h2>
+
+  <h3 class="sub">9.1 Linear Kernel</h3>
+  <div class="math-block">K(x<sub>i</sub>, x<sub>j</sub>) = x<sub>i</sub> · x<sub>j</sub></div>
+  <ul>
+    <li>Simplest kernel — it is basically <b>no transformation at all</b> (φ(x) = x).</li>
+    <li>Used when data is <b>already linearly separable</b>.</li>
+    <li>Fast to train, easy to interpret (weights directly show feature importance).</li>
+    <li>Best suited for: text classification, high-dimensional sparse data (e.g. spam detection, document classification) where number of features is already large.</li>
+  </ul>
+
+  <h3 class="sub">9.2 Polynomial Kernel</h3>
+  <div class="math-block">K(x<sub>i</sub>, x<sub>j</sub>) = (γ·x<sub>i</sub>·x<sub>j</sub> + r)<sup>d</sup></div>
+  <ul>
+    <li><b>d</b> = degree of the polynomial (controls flexibility of the curve — higher d = more complex boundary).</li>
+    <li><b>γ</b> (gamma) = scaling factor for the dot product.</li>
+    <li><b>r</b> = coefficient (constant term, controls influence of higher vs lower order terms).</li>
+    <li>Captures <em>interaction</em> between features (e.g. combinations like x<sub>1</sub>²x<sub>2</sub>), which linear kernel cannot.</li>
+    <li>Good when relation between classes is curved but has a clear polynomial-like pattern.</li>
+    <li>Risk: <span class="hl">high degree d can easily overfit</span> and becomes computationally heavy.</li>
+  </ul>
+
+  <h3 class="sub">9.3 Gaussian / RBF Kernel (Radial Basis Function)</h3>
+  <div class="math-block">K(x<sub>i</sub>, x<sub>j</sub>) = exp( −γ ‖x<sub>i</sub> − x<sub>j</sub>‖² )&nbsp;&nbsp;&nbsp; [also written with 1/2σ² instead of γ]</div>
+  <ul>
+    <li>Most popular and most powerful/flexible kernel — <b>default choice</b> in most SVM libraries (e.g. sklearn's SVC).</li>
+    <li>Measures <em>similarity</em> based on distance — points close together get a value near 1, far apart get a value near 0.</li>
+    <li>Maps data into an <b>infinite-dimensional</b> feature space — can model extremely complex, non-linear boundaries.</li>
+    <li><b>γ (gamma)</b> controls the "reach" of a single training point:
+      <ul>
+        <li>Large γ → small reach → boundary hugs the data tightly (risk of overfitting).</li>
+        <li>Small γ → large reach → boundary is smoother (risk of underfitting).</li>
+      </ul>
+    </li>
+    <li>Great default when you have no prior knowledge of the data's shape.</li>
+  </ul>
+
+  <table>
+    <tr><th>Kernel</th><th>Formula</th><th>Best for</th><th>Risk</th></tr>
+    <tr><td>Linear</td><td>x<sub>i</sub>·x<sub>j</sub></td><td>Linearly separable / high-dim sparse data</td><td>Underfits curved data</td></tr>
+    <tr><td>Polynomial</td><td>(γx<sub>i</sub>·x<sub>j</sub>+r)<sup>d</sup></td><td>Moderate, structured non-linearity</td><td>Overfits at high degree</td></tr>
+    <tr><td>Gaussian (RBF)</td><td>exp(−γ‖x<sub>i</sub>−x<sub>j</sub>‖²)</td><td>Complex, unknown-shape non-linearity</td><td>Overfits with high γ</td></tr>
+  </table>
+
+  <div class="box example">
+    <div class="tag">Beginner mnemonic</div>
+    Linear = straight ruler. Polynomial = a bendy French curve with a fixed "bendiness" (degree d). RBF/Gaussian = playdough that can mould into <em>any</em> shape around the data — most flexible of the three.
+  </div>
+
+  <p>Other kernels that also exist (less commonly asked, good to know): <b>Sigmoid kernel</b> — K(x<sub>i</sub>,x<sub>j</sub>) = tanh(γx<sub>i</sub>·x<sub>j</sub> + r), behaves similar to a neural network's activation function.</p>
+
+  <div class="box note">
+    <div class="tag">Mercer's condition</div>
+    Not every function can be used as a kernel. A valid kernel must satisfy <b>Mercer's theorem</b> — its kernel (Gram) matrix must be symmetric and positive semi-definite. This guarantees that a valid φ(x) mapping exists behind the kernel function.
+  </div>
+
+  <!-- SECTION 10 -->
+  <h2 class="section" id="s10"><span class="secnum">10</span>Properties of SVM</h2>
+  <ul class="checklist">
+    <li><b>Maximum margin classifier</b> — always tries to find the widest possible separating margin, giving good generalisation.</li>
+    <li><b>Effective in high-dimensional spaces</b> — even works well when number of features &gt; number of samples.</li>
+    <li><b>Memory efficient</b> — decision function uses only support vectors, not the entire training set.</li>
+    <li><b>Versatile</b> — different kernel functions can be specified for the decision function, so it adapts to many types of data.</li>
+    <li><b>Convex optimisation</b> — the training problem is convex, so it always converges to a <em>global optimum</em> (no risk of getting stuck in local minima, unlike neural networks).</li>
+    <li><b>Robust to overfitting</b> — especially in high-dimensional space, when margin/C is chosen well.</li>
+    <li><b>Works for both classification and regression</b> (SVC and SVR).</li>
+    <li><b>Strong theoretical foundation</b> — based on Statistical Learning Theory / VC dimension, so its generalisation behaviour is mathematically well understood.</li>
+  </ul>
+
+  <!-- SECTION 11 -->
+  <h2 class="section" id="s11"><span class="secnum">11</span>Issues / Limitations of SVM</h2>
+  <ul class="checklist">
+    <li><b>Choice of kernel and parameters</b> — performance depends heavily on selecting the right kernel and tuning C, γ, d; no universal rule, needs cross-validation.</li>
+    <li><b>Slow on large datasets</b> — training time complexity is roughly O(n²) to O(n³) with number of samples n, so it becomes slow/impractical for very large datasets (e.g. millions of rows).</li>
+    <li><b>Poor performance with noisy / overlapping data</b> — heavy class overlap or many outliers hurts accuracy even with soft margin.</li>
+    <li><b>No direct probability estimates</b> — SVM outputs a class label, not a probability, by default (extra calibration like Platt scaling is needed to get probabilities).</li>
+    <li><b>Memory intensive kernel matrix</b> — non-linear kernels require storing an n×n kernel matrix, which grows very large for big n.</li>
+    <li><b>Difficult to interpret</b> — especially with non-linear kernels (RBF, polynomial), it's hard to explain "why" a decision was made, unlike decision trees.</li>
+    <li><b>Not naturally suited for multi-class problems</b> — SVM is fundamentally a binary classifier; multi-class needs extra strategies like <em>One-vs-One</em> or <em>One-vs-Rest</em>.</li>
+    <li><b>Feature scaling required</b> — SVM is sensitive to the scale of features; inputs must be normalised/standardised before training, or the kernel distances get distorted.</li>
+    <li><b>Sensitive to choice of C</b> — wrong C can lead to overfitting (too strict) or underfitting (too loose).</li>
+  </ul>
+
+  <div class="sticky green">
+    <b>Exam tip</b>
+    If asked "why not always use SVM for big data / deep learning problems?" → answer: training complexity O(n²–n³), memory-heavy kernel matrix, and no natural probability output — that's usually the expected answer.
+  </div>
+
+  <!-- SECTION 12 -->
+  <h2 class="section" id="s12"><span class="secnum">12</span>Quick Revision Sheet</h2>
+  <table>
+    <tr><th>Term</th><th>One-line meaning</th></tr>
+    <tr><td>Hyperplane</td><td>Decision boundary: w·x + b = 0</td></tr>
+    <tr><td>Margin</td><td>Distance between hyperplane and nearest points; SVM maximises it</td></tr>
+    <tr><td>Support Vectors</td><td>Points closest to hyperplane; they alone define it</td></tr>
+    <tr><td>Hard margin</td><td>No misclassification allowed; needs perfectly separable data</td></tr>
+    <tr><td>Soft margin</td><td>Some misclassification allowed via slack ξ and penalty C</td></tr>
+    <tr><td>Kernel trick</td><td>Compute dot product in higher dim without transforming data explicitly</td></tr>
+    <tr><td>Linear kernel</td><td>x<sub>i</sub>·x<sub>j</sub> — for linearly separable data</td></tr>
+    <tr><td>Polynomial kernel</td><td>(γx<sub>i</sub>·x<sub>j</sub>+r)<sup>d</sup> — curved, controllable complexity</td></tr>
+    <tr><td>Gaussian/RBF kernel</td><td>exp(−γ‖x<sub>i</sub>−x<sub>j</sub>‖²) — most flexible, distance-based similarity</td></tr>
+    <tr><td>C parameter</td><td>Trade-off: large C = narrow margin/less error, small C = wide margin/more error</td></tr>
+    <tr><td>γ (gamma) parameter</td><td>Controls reach/influence of a single point (poly &amp; RBF kernels)</td></tr>
+  </table>
+
+  <div class="box example">
+    <div class="tag">One-shot summary to remember</div>
+    "SVM draws the widest possible street between two classes using only the closest points (support vectors); when a straight street won't work, the kernel trick secretly reshapes the space (linear / polynomial / Gaussian) so that it will."
+  </div>
+
+  <div class="footer-note">— end of notes, all the best for exams! ✎ —</div>
+</div>
+</body>
+</html>
